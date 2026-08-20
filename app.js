@@ -1,9 +1,3 @@
-function handleModeChange() {
-  const mode = document.querySelector('input[name="mode"]:checked').value;
-  const topicContainer = document.getElementById('topicContainer');
-  topicContainer.style.display = mode === 'manual' ? 'block' : 'none';
-}
-
 function toggleTheme() {
   const html = document.documentElement;
   const currentTheme = html.getAttribute('data-theme');
@@ -19,7 +13,7 @@ async function generateContent() {
   const btn = document.getElementById('generateBtn');
 
   if (mode === 'manual' && !topic.trim()) {
-    return alert('Please enter a content topic.');
+    return alert('Please enter a content topic for manual mode.');
   }
 
   btn.disabled = true;
@@ -38,7 +32,6 @@ async function generateContent() {
 
     status.innerHTML = '<div class="badge">✅ Generated Content for topic: <b>' + data.topicUsed + '</b></div>';
     
-    // Parse Markdown into rich HTML (Tables, Emojis, Bold Text)
     output.innerHTML = marked.parse(data.finalPost);
     output.style.display = 'block';
 
