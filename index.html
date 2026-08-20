@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agentic Blog Engine</title>
+  <style>
+    body { font-family: sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; background: #0f172a; color: #f8fafc; }
+    input, select, button { width: 100%; padding: 12px; margin: 8px 0; background: #1e293b; color: #fff; border: 1px solid #334155; border-radius: 6px; box-sizing: border-box; }
+    button { background: #2563eb; cursor: pointer; font-weight: bold; border: none; }
+    button:disabled { background: #64748b; }
+    .box { background: #1e293b; padding: 16px; border-radius: 8px; margin-top: 20px; white-space: pre-wrap; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <h2>EZERV Forge — AI Agent Engine</h2>
+  <input type="text" id="topic" placeholder="Enter topic..." />
+  <select id="tone">
+    <option value="Professional">Professional</option>
+    <option value="Casual">Casual</option>
+  </select>
+  <button id="generateBtn" onclick="generateContent()">Generate Content</button>
+
+  <div id="status" style="margin-top:12px; color:#94a3b8;"></div>
+  <div id="output" class="box" style="display:none;"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

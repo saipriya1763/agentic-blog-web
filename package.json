@@ -1,0 +1,8 @@
+{
+  "name": "agentic-blog-web",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "groq-sdk": "^0.7.0"
+  }
+}
