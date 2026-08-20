@@ -18,9 +18,34 @@ export default async function handler(req, res) {
     const apiKey = rawKey.replace(/[^\x00-\x7F]/g, '').trim();
 
     if (!apiKey) {
-      return res.status(500).json({ error: 'GROQ_API_KEY environment variable is not configured in Vercel.' });
+      return res.status(500).json({ error: 'GROQ_API_KEY environment variable is missing in Vercel.' });
     }
 
+    // 1. Fetch currently active models directly from Groq API
+    const modelsRes = await fetch('https://api.groq.com/openai/v1/models', {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${apiKey}` }
+    });
+
+    if (!modelsRes.ok) {
+      const errData = await modelsRes.json().catch(() => ({}));
+      return res.status(modelsRes.status).json({ 
+        error: errData.error?.message || 'Invalid Groq API key or Groq service issue.' 
+      });
+    }
+
+    const modelsData = await modelsRes.json();
+    const availableModels = modelsData.data || [];
+
+    if (availableModels.length === 0) {
+      return res.status(500).json({ error: 'No active models found for this Groq API key.' });
+    }
+
+    // Pick the best available active text model on your account
+    const selectedModelObj = availableModels.find(m => m.id.includes('llama') || m.id.includes('gemma')) || availableModels[0];
+    const selectedModel = selectedModelObj.id;
+
+    // 2. Generate content using the discovered model ID
     let finalTopic = topic && topic.trim() ? topic : "Autonomous AI Agents & Modern Tech Workflows";
 
     const systemPrompt = `You are an expert AI content creator generating viral, high-engagement content for LinkedIn.
@@ -33,57 +58,38 @@ Formatting Rules:
 
     const userPrompt = `Generate a comprehensive, engaging LinkedIn post on the topic: "${finalTopic}".`;
 
-    // Candidate active Groq models in order of priority
-    const models = [
-      'mixtral-8x7b-32768',
-      'gemma2-9b-it',
-      'llama-3.3-70b-versatile'
-    ];
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: selectedModel,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 1500
+      })
+    });
 
-    let finalPost = null;
-    let lastErrorMessage = '';
-
-    for (const model of models) {
-      try {
-        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: model,
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userPrompt }
-            ],
-            temperature: 0.7,
-            max_tokens: 1500
-          })
-        });
-
-        const textResponse = await groqRes.text();
-        let data;
-        try {
-          data = JSON.parse(textResponse);
-        } catch (e) {
-          continue;
-        }
-
-        if (groqRes.ok && data.choices?.[0]?.message?.content) {
-          finalPost = data.choices[0].message.content;
-          break; // Stop loop on successful generation
-        } else {
-          lastErrorMessage = data.error?.message || `Model ${model} failed`;
-        }
-      } catch (err) {
-        lastErrorMessage = err.message;
-      }
+    const textResponse = await groqRes.text();
+    let data;
+    try {
+      data = JSON.parse(textResponse);
+    } catch (e) {
+      return res.status(500).json({ error: `Groq API raw error: ${textResponse}` });
     }
 
-    if (!finalPost) {
-      return res.status(500).json({ error: `Groq error: ${lastErrorMessage}` });
+    if (!groqRes.ok) {
+      return res.status(groqRes.status).json({ 
+        error: data.error?.message || 'Groq completion failed.' 
+      });
     }
+
+    const finalPost = data.choices?.[0]?.message?.content || "No content generated.";
 
     return res.status(200).json({
       topicUsed: finalTopic,
