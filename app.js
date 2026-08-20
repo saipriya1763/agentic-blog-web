@@ -1,9 +1,3 @@
-function toggleTheme() {
-  const html = document.documentElement;
-  const currentTheme = html.getAttribute('data-theme');
-  html.setAttribute('data-theme', currentTheme === 'dark' ? 'light' : 'dark');
-}
-
 async function generateContent() {
   const mode = document.querySelector('input[name="mode"]:checked').value;
   const topic = document.getElementById('topic').value;
@@ -27,8 +21,17 @@ async function generateContent() {
       body: JSON.stringify({ mode, topic, tone })
     });
 
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
+    const rawText = await res.text();
+    let data;
+    try {
+      data = JSON.parse(rawText);
+    } catch (e) {
+      throw new Error(`Server returned non-JSON error. Check Vercel logs. (${res.status})`);
+    }
+
+    if (!res.ok || data.error) {
+      throw new Error(data.error || 'Failed to generate content.');
+    }
 
     status.innerHTML = '<div class="badge">✅ Generated Content for topic: <b>' + data.topicUsed + '</b></div>';
     
