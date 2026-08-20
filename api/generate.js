@@ -4,10 +4,13 @@ export default async function handler(req, res) {
   }
 
   const { mode, topic, tone } = req.body;
-  const apiKey = process.env.GROQ_API_KEY;
+  
+  // Clean raw key to remove non-ASCII characters or hidden whitespace
+  const rawKey = process.env.GROQ_API_KEY || '';
+  const apiKey = rawKey.replace(/[^\x00-\x7F]/g, '').trim();
 
   if (!apiKey) {
-    return res.status(500).json({ error: 'GROQ_API_KEY is missing in Vercel environment variables.' });
+    return res.status(500).json({ error: 'GROQ_API_KEY is missing or invalid in environment variables.' });
   }
 
   let finalTopic = topic && topic.trim() ? topic : "Autonomous AI Agents & Modern Tech Workflows";
