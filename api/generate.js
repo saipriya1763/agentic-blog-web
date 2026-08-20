@@ -21,7 +21,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'GROQ_API_KEY environment variable is missing in Vercel.' });
     }
 
-    // 1. Fetch currently active models directly from Groq API
+    // 1. Fetch available models from Groq API
     const modelsRes = await fetch('https://api.groq.com/openai/v1/models', {
       method: 'GET',
       headers: { 'Authorization': `Bearer ${apiKey}` }
@@ -35,17 +35,30 @@ export default async function handler(req, res) {
     }
 
     const modelsData = await modelsRes.json();
-    const availableModels = modelsData.data || [];
+    const availableModelIds = (modelsData.data || []).map(m => m.id);
 
-    if (availableModels.length === 0) {
-      return res.status(500).json({ error: 'No active models found for this Groq API key.' });
+    // Filter out safety, guardrail, audio, and preview models
+    const chatModels = availableModelIds.filter(id => 
+      !id.includes('guard') && 
+      !id.includes('whisper') && 
+      !id.includes('vision') &&
+      !id.includes('safetensors')
+    );
+
+    if (chatModels.length === 0) {
+      return res.status(500).json({ error: 'No standard chat generation models available on this Groq account.' });
     }
 
-    // Pick the best available active text model on your account
-    const selectedModelObj = availableModels.find(m => m.id.includes('llama') || m.id.includes('gemma')) || availableModels[0];
-    const selectedModel = selectedModelObj.id;
+    // Prioritize standard generation models
+    const preferredOrder = [
+      'llama-3.3-70b-versatile',
+      'llama-3.1-8b-instant',
+      'mixtral-8x7b-32768',
+      'gemma2-9b-it'
+    ];
 
-    // 2. Generate content using the discovered model ID
+    const selectedModel = preferredOrder.find(m => chatModels.includes(m)) || chatModels[0];
+
     let finalTopic = topic && topic.trim() ? topic : "Autonomous AI Agents & Modern Tech Workflows";
 
     const systemPrompt = `You are an expert AI content creator generating viral, high-engagement content for LinkedIn.
@@ -58,6 +71,7 @@ Formatting Rules:
 
     const userPrompt = `Generate a comprehensive, engaging LinkedIn post on the topic: "${finalTopic}".`;
 
+    // 2. Request completion with selected chat model
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -71,7 +85,7 @@ Formatting Rules:
           { role: 'user', content: userPrompt }
         ],
         temperature: 0.7,
-        max_tokens: 1500
+        max_tokens: 1000
       })
     });
 
@@ -93,6 +107,7 @@ Formatting Rules:
 
     return res.status(200).json({
       topicUsed: finalTopic,
+      selectedModel,
       finalPost
     });
 
