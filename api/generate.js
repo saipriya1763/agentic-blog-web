@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-  // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -15,7 +14,6 @@ export default async function handler(req, res) {
   try {
     const { mode, topic, tone } = req.body || {};
     
-    // Sanitize key
     const rawKey = process.env.GROQ_API_KEY || '';
     const apiKey = rawKey.replace(/[^\x00-\x7F]/g, '').trim();
 
@@ -35,38 +33,57 @@ Formatting Rules:
 
     const userPrompt = `Generate a comprehensive, engaging LinkedIn post on the topic: "${finalTopic}".`;
 
-    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'llama3-8b-8192',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 1500
-      })
-    });
+    // Candidate active Groq models in order of priority
+    const models = [
+      'mixtral-8x7b-32768',
+      'gemma2-9b-it',
+      'llama-3.3-70b-versatile'
+    ];
 
-    const textResponse = await groqRes.text();
-    let data;
-    try {
-      data = JSON.parse(textResponse);
-    } catch (e) {
-      return res.status(500).json({ error: `Groq API raw response error: ${textResponse}` });
+    let finalPost = null;
+    let lastErrorMessage = '';
+
+    for (const model of models) {
+      try {
+        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt }
+            ],
+            temperature: 0.7,
+            max_tokens: 1500
+          })
+        });
+
+        const textResponse = await groqRes.text();
+        let data;
+        try {
+          data = JSON.parse(textResponse);
+        } catch (e) {
+          continue;
+        }
+
+        if (groqRes.ok && data.choices?.[0]?.message?.content) {
+          finalPost = data.choices[0].message.content;
+          break; // Stop loop on successful generation
+        } else {
+          lastErrorMessage = data.error?.message || `Model ${model} failed`;
+        }
+      } catch (err) {
+        lastErrorMessage = err.message;
+      }
     }
 
-    if (!groqRes.ok) {
-      return res.status(groqRes.status).json({ 
-        error: data.error?.message || 'Groq API request failed.' 
-      });
+    if (!finalPost) {
+      return res.status(500).json({ error: `Groq error: ${lastErrorMessage}` });
     }
-
-    const finalPost = data.choices?.[0]?.message?.content || "No content generated.";
 
     return res.status(200).json({
       topicUsed: finalTopic,
