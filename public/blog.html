@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Engineering Autonomous AI Agents with Groq & Vercel</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              500: '#3b82f6',
+              600: '#2563eb',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Mermaid.js for Diagrams -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ 
+      startOnLoad: true, 
+      theme: 'dark',
+      securityLevel: 'loose'
+    });
+  </script>
+
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    code, pre { font-family: 'Fira Code', monospace; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-blue-500 selection:text-white">
+
+  <!-- Navigation Bar -->
+  <nav class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-5xl mx-mx-auto px-6 h-16 flex items-center justify-between mx-auto">
+      <div class="flex items-center space-x-3">
+        <span class="p-2 bg-blue-600 rounded-lg font-bold text-xl tracking-wider">EF</span>
+        <span class="font-semibold text-lg text-white">EZERV Engineering Blog</span>
+      </div>
+      <div class="flex items-center space-x-4">
+        <a href="/" class="text-sm text-slate-400 hover:text-white transition">App Generator</a>
+        <a href="#" class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-500 rounded-lg font-medium transition">Documentation</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content Area -->
+  <main class="max-w-4xl mx-auto px-6 py-12">
+    
+    <!-- Blog Header -->
+    <header class="space-y-4 mb-12 border-b border-slate-800 pb-8">
+      <div class="flex items-center space-x-3 text-xs font-semibold uppercase tracking-wider text-blue-400">
+        <span class="px-2.5 py-1 bg-blue-950/80 border border-blue-800/60 rounded-full">System Architecture</span>
+        <span>•</span>
+        <span>August 2026</span>
+        <span>•</span>
+        <span>6 Min Read</span>
+      </div>
+      <h1 class="text-4xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
+        Building Resilient LLM Workflows with Serverless Fallbacks
+      </h1>
+      <p class="text-lg text-slate-400 leading-relaxed">
+        How we eliminated API key non-ASCII errors, handled rate limits gracefully, and integrated dynamic Groq model rotation into EZERV Forge.
+      </p>
+    </header>
+
+    <!-- Key Metrics Infographic Section -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+      <div class="p-6 bg-slate-900 border border-slate-800 rounded-xl">
+        <div class="text-slate-400 text-sm font-medium">Model Inference Speed</div>
+        <div class="text-3xl font-bold text-blue-400 mt-2">&lt; 300 ms</div>
+        <div class="text-xs text-slate-500 mt-1">Powered by Groq LPUs</div>
+      </div>
+      <div class="p-6 bg-slate-900 border border-slate-800 rounded-xl">
+        <div class="text-slate-400 text-sm font-medium">Uptime Guarantee</div>
+        <div class="text-3xl font-bold text-emerald-400 mt-2">99.9%</div>
+        <div class="text-xs text-slate-500 mt-1">Multi-model failover active</div>
+      </div>
+      <div class="p-6 bg-slate-900 border border-slate-800 rounded-xl">
+        <div class="text-slate-400 text-sm font-medium">Execution Environment</div>
+        <div class="text-3xl font-bold text-purple-400 mt-2">Vercel Edge</div>
+        <div class="text-xs text-slate-500 mt-1">Zero-downtime deployments</div>
+      </div>
+    </section>
+
+    <!-- Article Content -->
+    <article class="space-y-8 text-slate-300 text-lg leading-relaxed">
+      
+      <p>
+        Building AI applications on modern serverless infrastructure requires robust error recovery. Relying on a single hardcoded model name can crash client applications when provider models are decommissioned or encounter strict rate limits.
+      </p>
+
+      <!-- Section: Architecture & Mermaid Diagram -->
+      <h2 class="text-2xl font-bold text-white pt-4">1. Dynamic Fallback Flowchart</h2>
+      <p class="text-base text-slate-400">
+        The diagram below illustrates how incoming prompt requests dynamically query available system models, filter out safety/guardrail restrictions, and process prompt execution seamlessly:
+      </p>
+
+      <!-- Interactive Mermaid Diagram -->
+      <div class="my-6 p-6 bg-slate-900/90 border border-slate-800 rounded-xl flex justify-center overflow-x-auto">
+        <pre class="mermaid">
+graph TD
+    A[Client Request] --> B[Serverless API Handler]
+    B --> C{Sanitize API Key}
+    C -->|Valid ASCII| D[Fetch /v1/models]
+    C -->|Invalid| E[Return 500 Config Error]
+    D --> F[Filter Out Guard & Audio Models]
+    F --> G[Sort Priority Queue]
+    G --> H[Attempt Model Completion]
+    H -->|200 OK| I[Return Generated Post]
+    H -->|429 Rate Limit| J[Rotate to Next Model]
+    J --> H
+        </pre>
+      </div>
+
+      <!-- Section: Tech Stack Overview Table -->
+      <h2 class="text-2xl font-bold text-white pt-4">2. Core Technical Architecture</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm border-collapse border border-slate-800 rounded-lg overflow-hidden">
+          <thead class="bg-slate-900 text-slate-200 uppercase text-xs">
+            <tr>
+              <th class="p-4 border-b border-slate-800">Layer</th>
+              <th class="p-4 border-b border-slate-800">Technology</th>
+              <th class="p-4 border-b border-slate-800">Purpose</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800 text-slate-400">
+            <tr>
+              <td class="p-4 font-semibold text-white">Frontend UI</td>
+              <td class="p-4">Vanilla JS + HTML5</td>
+              <td class="p-4">Lightweight client execution without bundler overhead</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-semibold text-white">API Serverless Layer</td>
+              <td class="p-4">Vercel Serverless Functions</td>
+              <td class="p-4">Handles CORS, sanitizes API keys, and routes prompts</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-semibold text-white">LLM Provider</td>
+              <td class="p-4">Groq Cloud API</td>
+              <td class="p-4">Sub-second inference using Llama & Gemma models</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Section: Key Code Implementation -->
+      <h2 class="text-2xl font-bold text-white pt-4">3. Sanitizing Environment Headers</h2>
+      <p class="text-base text-slate-400">
+        To prevent HTTP ByteString header crashes when API keys contain hidden Unicode whitespace or non-ASCII characters, we sanitize keys at the entry layer:
+      </p>
+
+      <div class="bg-slate-900 p-5 rounded-xl border border-slate-800 text-sm">
+        <pre class="text-blue-300"><code>// Sanitize raw key to strip hidden non-ASCII characters
+const rawKey = process.env.GROQ_API_KEY || '';
+const apiKey = rawKey.replace(/[^\x00-\x7F]/g, '').trim();</code></pre>
+      </div>
+
+    </article>
+
+    <!-- Footer -->
+    <footer class="mt-16 pt-8 border-t border-slate-800 text-center text-slate-500 text-sm">
+      <p>© 2026 EZERV Forge Project. Engineered with high-reliability serverless architecture.</p>
+    </footer>
+
+  </main>
+
+</body>
+</html>
