@@ -1,9 +1,12 @@
 {
   "name": "agentic-blog-web",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
   "dependencies": {
     "groq-sdk": "^0.7.0",
-    "marked": "^11.1.1"
+    "marked": "^11.1.1",
+    "pdfkit": "^0.17.2",
+    "docx": "^9.5.1",
+    "jszip": "^3.10.1"
   }
 }
